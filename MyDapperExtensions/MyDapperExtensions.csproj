@@ -7,6 +7,7 @@
     <Platforms>AnyCPU;x64</Platforms>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>MyDapperExtensions</Title>
+    <PackageProjectUrl>https://github.com/juliotec/MyDapperExtensions</PackageProjectUrl>
   </PropertyGroup>
 
   <ItemGroup>
