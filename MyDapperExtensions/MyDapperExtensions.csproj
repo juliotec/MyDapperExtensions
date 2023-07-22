@@ -11,6 +11,7 @@
     <Description>A small library that complements Dapper by adding basic CRUD operations (Get, Insert, Update, Delete) for your POCOs. For more advanced query scenarios, Dapper Extensions provides a system predicate. This is an updated version, since the previous one has been abandoned and out of date.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
 	<VersionPrefix>1.0.1</VersionPrefix>
+	<Authors>Julio Abarca</Authors>
   </PropertyGroup>
 
   <ItemGroup>
