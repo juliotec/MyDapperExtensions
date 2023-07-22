@@ -8,7 +8,16 @@
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>MyDapperExtensions</Title>
     <PackageProjectUrl>https://github.com/juliotec/MyDapperExtensions</PackageProjectUrl>
+    <Description>A small library that complements Dapper by adding basic CRUD operations (Get, Insert, Update, Delete) for your POCOs. For more advanced query scenarios, Dapper Extensions provides a system predicate. This is an updated version, since the previous one has been abandoned and out of date.</Description>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\readme.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.0.143" />
