@@ -76,6 +76,7 @@ namespace DapperExtensions.Sql
             }
 
             var result = new StringBuilder();
+
             if (!string.IsNullOrWhiteSpace(schemaName))
             {
                 result.AppendFormat(QuoteString(schemaName) + ".");
@@ -87,18 +88,24 @@ namespace DapperExtensions.Sql
             {
                 result.AppendFormat(" {0}", QuoteString(alias));
             }
+
             return result.ToString();
         }
 
         public virtual string GetColumnName(string prefix, string columnName, string alias)
         {
             if (string.IsNullOrEmpty(columnName))
+            {
                 throw new ArgumentNullException(nameof(columnName), $"{nameof(columnName)} cannot be null or empty.");
+            }
 
             if (string.IsNullOrWhiteSpace(columnName))
+            {
                 throw new ArgumentNullException(nameof(columnName), $"{nameof(columnName)} cannot be null or empty.");
+            }
 
             var result = new StringBuilder();
+
             if (!string.IsNullOrWhiteSpace(prefix))
             {
                 result.AppendFormat((IsQuoted(prefix) ? prefix : QuoteString(prefix)) + ".");
@@ -139,12 +146,13 @@ namespace DapperExtensions.Sql
             {
                 return value;
             }
+
             return string.Format("{0}{1}{2}", OpenQuote, value.Trim(), CloseQuote);
         }
 
         public virtual string UnQuoteString(string value)
         {
-            return IsQuoted(value) ? value.Substring(1, value.Length - 2) : value;
+            return IsQuoted(value) ? value[1..^1] : value;
         }
 
         public abstract string GetDatabaseFunctionString(DatabaseFunction databaseFunction, string columnName, string functionParameters = "");
@@ -154,10 +162,14 @@ namespace DapperExtensions.Sql
         public virtual string GetCountSql(string sql)
         {
             if (string.IsNullOrEmpty(sql))
+            {
                 throw new ArgumentNullException(nameof(sql), $"{nameof(sql)} cannot be null or empty.");
+            }
 
             if (string.IsNullOrWhiteSpace(sql))
+            {
                 throw new ArgumentNullException(nameof(sql), $"{nameof(sql)} cannot be null or empty.");
+            }
 
             return $"SELECT COUNT(*) AS {OpenQuote}Total{CloseQuote} FROM {sql}";
         }

@@ -25,6 +25,7 @@ namespace DapperExtensions.Predicate
             var parameter2 = ReflectionHelper.GetParameter(typeof(T), sqlGenerator, PropertyName, Value.Value2);
             var propertyName1 = parameters.SetParameterName(parameter1, sqlGenerator.Configuration.Dialect.ParameterPrefix);
             var propertyName2 = parameters.SetParameterName(parameter2, sqlGenerator.Configuration.Dialect.ParameterPrefix);
+            
             return string.Format("({0} {1}BETWEEN {2} AND {3})", columnName, Not ? "NOT " : string.Empty, propertyName1, propertyName2);
         }
 

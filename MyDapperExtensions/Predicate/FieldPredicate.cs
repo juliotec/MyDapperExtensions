@@ -42,12 +42,13 @@ namespace DapperExtensions.Predicate
         private string GetColumnName(ISqlGenerator sqlGenerator, ref Type parentType, ref string parameterPropertyName, bool isDml)
         {
             string result;
+
             if (Properties.Count > 1)
             {
                 var propertyName = Properties.Last().Name;
+
                 parentType = Properties.Last(p => p != Properties.Last()).PropertyType;
                 parameterPropertyName = parentType.Name + "_" + propertyName;
-
                 result = GetColumnName(parentType, sqlGenerator, propertyName, isDml, UseTableAlias);
             }
             else
@@ -60,23 +61,24 @@ namespace DapperExtensions.Predicate
 
         private string GetParameterName(ISqlGenerator sqlGenerator, IDictionary<string, object> parameters, object value)
         {
-            var p = ReflectionHelper.GetParameter(typeof(T), sqlGenerator, PropertyName, value);
-            return parameters.SetParameterName(p, sqlGenerator.Configuration.Dialect.ParameterPrefix);
+            return parameters.SetParameterName(ReflectionHelper.GetParameter(typeof(T), sqlGenerator, PropertyName, value), sqlGenerator.Configuration.Dialect.ParameterPrefix);
         }
 
         private string GetParameterName(ISqlGenerator sqlGenerator, IDictionary<string, object> parameters, string parameterPropertyName, Type parentType)
         {
             parameterPropertyName = string.IsNullOrEmpty(parameterPropertyName) ? PropertyName : parameterPropertyName;
 
-            var propParam = ReflectionHelper.GetParameter(parentType ?? typeof(T), sqlGenerator, parameterPropertyName, Value);
-            return parameters.SetParameterName(propParam, sqlGenerator.Configuration.Dialect.ParameterPrefix);
+            return parameters.SetParameterName(ReflectionHelper.GetParameter(parentType ?? typeof(T), sqlGenerator, parameterPropertyName, Value), sqlGenerator.Configuration.Dialect.ParameterPrefix);
         }
 
         private string GetParameterString(ISqlGenerator sqlGenerator, IDictionary<string, object> parameters, IEnumerable values)
         {
             var @params = new List<string>();
+
             foreach (var value in values)
+            {
                 @params.Add(GetParameterName(sqlGenerator, parameters, value));
+            }
 
             return @params.Aggregate(new StringBuilder(), (sb, s) => sb.Append(sb.Length != 0 ? ", " : string.Empty).Append(s), sb => sb.ToString());
         }
@@ -84,12 +86,16 @@ namespace DapperExtensions.Predicate
         private string GetSql(ISqlGenerator sqlGenerator, IDictionary<string, object> parameters, string columnName, string parameterPropertyName, Type parentType)
         {
             if (Value == null)
+            {
                 return string.Format("({0} IS {1}NULL)", columnName, Not ? "NOT " : string.Empty);
+            }
 
-            if (Value is IEnumerable values && !(Value is string))
+            if (Value is IEnumerable values && Value is not string)
             {
                 if (Operator != Operator.Eq)
+                {
                     throw new ArgumentException("Operator must be set to Eq for Enumerable types");
+                }
 
                 return string.Format("({0} {1}IN ({2}))", columnName, Not ? "NOT " : string.Empty, GetParameterString(sqlGenerator, parameters, values));
             }
@@ -113,7 +119,6 @@ namespace DapperExtensions.Predicate
         {
             var parameterPropertyName = string.Empty;
             Type parentType = null;
-
             var columnName = GetColumnName(sqlGenerator, ref parentType, ref parameterPropertyName, isDml);
 
             return GetSql(sqlGenerator, parameters, columnName, parameterPropertyName, parentType);

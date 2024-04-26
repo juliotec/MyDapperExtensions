@@ -13,11 +13,11 @@ namespace DapperExtensions
 {
     public static class DapperAsyncExtensions
     {
-        private readonly static object _lock = new object();
+        private readonly static object _lock = new();
         private static Func<IDapperExtensionsConfiguration, IDapperAsyncImplementor> _instanceFactory;
         private static IDapperAsyncImplementor _instance;
         private static IDapperExtensionsConfiguration _configuration;
-        private static readonly Dictionary<Type, IList<IProjection>> ColsBuffer = new Dictionary<Type, IList<IProjection>>();
+        private static readonly Dictionary<Type, IList<IProjection>> ColsBuffer = new();
 
         /// <summary>
         /// Gets or sets the default class mapper to use when generating class maps. If not specified, AutoClassMapper<T> is used.
@@ -80,10 +80,7 @@ namespace DapperExtensions
                 {
                     lock (_lock)
                     {
-                        if (_instance == null)
-                        {
-                            _instance = InstanceFactory(_configuration);
-                        }
+                        _instance ??= InstanceFactory(_configuration);
                     }
                 }
 
@@ -113,7 +110,6 @@ namespace DapperExtensions
                 if (ColsBuffer.TryGetValue(outType, out var cols) == false)
                 {
                     cols = new List<IProjection>();
-
                     typeof(T).GetProperties().
                         Select(i => i.Name).
                         ToList().
@@ -144,6 +140,7 @@ namespace DapperExtensions
         {
             _instance = null;
             _configuration = configuration;
+
             return _configuration;
         }
 
@@ -183,8 +180,8 @@ namespace DapperExtensions
         {
             var cols = GetBufferedCols<TOut>();
             TIn obj = await Instance.GetAsync<TIn>(connection, id, transaction, commandTimeout, buffered, cols).ConfigureAwait(false);
-
             Func<TIn, TOut> f = func.Compile();
+
             return f.Invoke(obj);
         }
 
@@ -206,6 +203,7 @@ namespace DapperExtensions
             var cols = GetBufferedCols<TOut>();
             List<TIn> list = (await Instance.GetListAsync<TIn>(connection, predicate, sort, transaction, commandTimeout, buffered, cols)).ToList();
             Func<TIn, TOut> f = func.Compile();
+
             return list.Select(i => f.Invoke(i));
         }
 
@@ -254,6 +252,7 @@ namespace DapperExtensions
             int? commandTimeout = null, bool ignoreAllKeyProperties = false) where TIn : class where TOut : class
         {
             var cols = GetBufferedCols<TOut>();
+
             return Instance.UpdateAsync(connection, entity, transaction, commandTimeout, ignoreAllKeyProperties, cols);
         }
 
@@ -292,13 +291,11 @@ namespace DapperExtensions
             bool buffered = false) where TIn : class where TOut : class
         {
             var cols = GetBufferedCols<TOut>();
-
             List<TIn> list = (await Instance.GetPageAsync<TIn>(connection, predicate, sort, page, resultsPerPage, transaction, commandTimeout, buffered, null)).ToList();
-
             // Transform TIn object to Anonymous type
             Func<TIn, TOut> f = func.Compile();
-            return list.Select(i => f.Invoke(i));
 
+            return list.Select(i => f.Invoke(i));
         }
 
         /// <summary>
@@ -330,11 +327,10 @@ namespace DapperExtensions
             IList<ISort> sort = null, int firstResult = 1, int maxResults = 10, IDbTransaction transaction = null, int? commandTimeout = null, bool buffered = false) where TIn : class where TOut : class
         {
             var cols = GetBufferedCols<TOut>();
-
             List<TIn> list = (await Instance.GetSetAsync<TIn>(connection, predicate, sort, firstResult, maxResults, transaction, commandTimeout, buffered, cols)).ToList();
-
             // Transform TIn object to Anonymous type
             Func<TIn, TOut> f = func.Compile();
+
             return list.Select(i => f.Invoke(i));
         }
 

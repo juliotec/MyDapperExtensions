@@ -97,7 +97,9 @@ namespace DapperExtensions
             var sequenceIdentityColumn = classMap.Properties.Where(p => p.KeyType == KeyType.SequenceIdentity).ToList();
 
             foreach (var e in entities)
+            {
                 await InternalInsertAsync(connection, e, transaction, commandTimeout, classMap, nonIdentityKeyProperties, identityColumn, triggerIdentityColumn, sequenceIdentityColumn);
+            }
         }
 
         /// <summary>
@@ -225,6 +227,7 @@ namespace DapperExtensions
             int? commandTimeout, bool ignoreAllKeyProperties = false)
         {
             GetMapAndPredicate<T>(entity, out var classMap, out var predicate, true);
+            
             return await InternalUpdateAsync(connection, entity, classMap, predicate, transaction, cols, commandTimeout, ignoreAllKeyProperties);
         }
 
@@ -234,7 +237,9 @@ namespace DapperExtensions
             GetMapAndPredicate<T>(entities.FirstOrDefault(), out var classMap, out var predicate, true);
 
             foreach (var e in entities)
+            {
                 await InternalUpdateAsync(connection, e, classMap, predicate, transaction, cols, commandTimeout, ignoreAllKeyProperties);
+            }
         }
 
         private async Task<T> InternalGetAsync<T>(IDbConnection connection, dynamic id, IDbTransaction transaction, int? commandTimeout, IList<IProjection> colsToSelect, IList<IReferenceMap> includedProperties = null)
@@ -271,6 +276,7 @@ namespace DapperExtensions
             var parameters = new Dictionary<string, object>();
             var sql = SqlGenerator.Select(classMap, predicate, sort, parameters, colsToSelect);
             var dynamicParameters = new DynamicParameters();
+
             foreach (var parameter in parameters)
             {
                 dynamicParameters.Add(parameter.Key, parameter.Value);
@@ -295,6 +301,7 @@ namespace DapperExtensions
             var parameters = new Dictionary<string, object>();
             var sql = SqlGenerator.SelectPaged(classMap, predicate, sort, page, resultsPerPage, parameters, colsToSelect);
             var dynamicParameters = new DynamicParameters();
+
             foreach (var parameter in parameters)
             {
                 dynamicParameters.Add(parameter.Key, parameter.Value);
@@ -322,6 +329,7 @@ namespace DapperExtensions
             var parameters = new Dictionary<string, object>();
             var sql = SqlGenerator.SelectSet(classMap, predicate, sort, firstResult, maxResults, parameters, colsToSelect);
             var dynamicParameters = new DynamicParameters();
+
             foreach (var parameter in parameters)
             {
                 dynamicParameters.Add(parameter.Key, parameter.Value);

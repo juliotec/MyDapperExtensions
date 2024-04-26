@@ -45,7 +45,6 @@ namespace DapperExtensions.Mapper
         public Type EntityType { get; private set; }
         public Type ParentEntityType { get; private set; }
         public IList<IReferenceProperty> ReferenceProperties { get; private set; }
-
         public JoinType JoinType { get; private set; }
         public IPredicateGroup JoinPredicate { get; private set; }
 
@@ -75,32 +74,35 @@ namespace DapperExtensions.Mapper
             JoinType = join;
         }
 
-        private MemberInfo GetMemberInfo(Expression expression)
+        private static MemberInfo GetMemberInfo(Expression expression)
         {
             if (expression is MemberExpression memberExpression)
+            {
                 return memberExpression.Member;
+            }
 
             if (expression is UnaryExpression unaryExpression)
+            {
                 return GetMemberInfo(unaryExpression.Operand);
+            }
 
             return ((MemberExpression)((UnaryExpression)expression).Operand).Member;
         }
 
         protected void SetReferenceProperties<TEntity>(UnaryExpression expression)
         {
-            var binaries = ReflectionHelper.GetBinaryExpressionsFromUnary(((UnaryExpression)expression));
+            var binaries = ReflectionHelper.GetBinaryExpressionsFromUnary(expression);
+
             foreach (BinaryExpression binary in binaries)
             {
                 var leftMember = GetMemberInfo(binary.Left);
                 var rightMember = GetMemberInfo(binary.Right);
-
                 var leftKey = new PropertyKey((PropertyInfo)leftMember, leftMember.DeclaringType, leftMember.Name);
                 var rightKey = new PropertyKey((PropertyInfo)rightMember, rightMember.DeclaringType, rightMember.Name);
                 var comparator = ReflectionHelper.GetRelacionalComparator(binary.NodeType, Name);
-
                 var referenceProperty = new ReferenceProperty<TEntity>(PropertyInfo, ParentIdentity, Identity);
-                referenceProperty.Compare(leftKey, rightKey, comparator);
 
+                referenceProperty.Compare(leftKey, rightKey, comparator);
                 ReferenceProperties.Add(referenceProperty);
             }
         }
@@ -118,6 +120,7 @@ namespace DapperExtensions.Mapper
         public void Reference<TMany>(Expression<Func<TMany, T, object>> expression)
         {
             var resultExpression = ReflectionHelper.GetProperty(expression, true);
+
             SetReferenceProperties<TMany>((UnaryExpression)resultExpression);
             EntityType = typeof(TMany);
             ParentEntityType = typeof(T);

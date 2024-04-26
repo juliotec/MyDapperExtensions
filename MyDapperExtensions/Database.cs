@@ -118,10 +118,7 @@ namespace DapperExtensions
             {
                 if (Connection.State != ConnectionState.Closed)
                 {
-                    if (_transaction != null)
-                    {
-                        _transaction.Rollback();
-                    }
+                    _transaction?.Rollback();
 
                     Connection.Close();
                 }
@@ -148,6 +145,7 @@ namespace DapperExtensions
         public void RunInTransaction(Action action)
         {
             BeginTransaction();
+
             try
             {
                 action?.Invoke();
@@ -167,10 +165,13 @@ namespace DapperExtensions
         public T RunInTransaction<T>(Func<T> func)
         {
             BeginTransaction();
+
             try
             {
                 var result = func.Invoke();
+
                 Commit();
+
                 return result;
             }
             catch (Exception)

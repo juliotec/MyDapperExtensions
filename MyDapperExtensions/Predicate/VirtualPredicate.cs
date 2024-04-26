@@ -42,8 +42,7 @@ namespace DapperExtensions.Predicate
                 Name = Comparable
             };
 
-            var valueParameter = parameters.SetParameterName(param, sqlGenerator.Configuration.Dialect.ParameterPrefix);
-            return $"({Comparable} {Operator.GetString(Not)} {valueParameter})";
+            return $"({Comparable} {Operator.GetString(Not)} {parameters.SetParameterName(param, sqlGenerator.Configuration.Dialect.ParameterPrefix)})";
         }
     }
 }

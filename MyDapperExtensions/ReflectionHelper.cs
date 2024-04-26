@@ -13,46 +13,47 @@ namespace DapperExtensions
 {
     public static class ReflectionHelper
     {
-        private static readonly List<Type> _simpleTypes = new List<Type>
-                               {
-                                   typeof(byte),
-                                   typeof(sbyte),
-                                   typeof(short),
-                                   typeof(ushort),
-                                   typeof(int),
-                                   typeof(uint),
-                                   typeof(long),
-                                   typeof(ulong),
-                                   typeof(float),
-                                   typeof(double),
-                                   typeof(decimal),
-                                   typeof(bool),
-                                   typeof(string),
-                                   typeof(char),
-                                   typeof(Guid),
-                                   typeof(DateTime),
-                                   typeof(DateTimeOffset),
-                                   typeof(byte[])
-                               };
+        private static readonly List<Type> _simpleTypes = new()
+        {
+            typeof(byte),
+            typeof(sbyte),
+            typeof(short),
+            typeof(ushort),
+            typeof(int),
+            typeof(uint),
+            typeof(long),
+            typeof(ulong),
+            typeof(float),
+            typeof(double),
+            typeof(decimal),
+            typeof(bool),
+            typeof(string),
+            typeof(char),
+            typeof(Guid),
+            typeof(DateTime),
+            typeof(DateTimeOffset),
+            typeof(byte[])
+        };
 
         public static IList<PropertyInfo> GetNestedProperties<T>(string nestedProperties, char delimiter, out string propertyInfoName)
         {
             IList<PropertyInfo> propertyInfos = new List<PropertyInfo>();
             var properties = nestedProperties.Split(delimiter);
             string _propertyInfoName = "";
-
             var parentType = typeof(T);
             int index = 0;
+
             foreach (var propName in properties)
             {
                 index++;
+
                 var propertyInfo = GetPropertyInfo(parentType, propName);
+
                 propertyInfos.Add(propertyInfo);
-
                 _propertyInfoName += propertyInfo.Name + ((index < properties.Length) ? delimiter.ToString() : "");
-
                 parentType = propertyInfo.PropertyType;
             }
+
             propertyInfoName = _propertyInfoName;
 
             return propertyInfos;
@@ -62,6 +63,7 @@ namespace DapperExtensions
         {
             IList<MemberInfo> memberInfos = new List<MemberInfo>();
             Expression expr = lambda;
+
             for (; ; )
             {
                 switch (expr.NodeType)
@@ -106,7 +108,6 @@ namespace DapperExtensions
                         }
 
                         return mi;
-
                     case ExpressionType.Call:
                         return ((MethodCallExpression)expr).Arguments;
                     default:
@@ -118,6 +119,7 @@ namespace DapperExtensions
         public static IDictionary<string, Func<object>> GetObjectValues(object obj)
         {
             IDictionary<string, Func<object>> result = new Dictionary<string, Func<object>>();
+
             if (obj == null)
             {
                 return result;
@@ -127,7 +129,9 @@ namespace DapperExtensions
             {
                 if (propertyInfo.GetIndexParameters().Length > 0) continue;
                 string name = propertyInfo.Name;
+
                 object value() => propertyInfo.GetValue(obj, null);
+
                 result[name] = value;
             }
 
@@ -145,6 +149,7 @@ namespace DapperExtensions
         public static bool IsSimpleType(Type type)
         {
             Type actualType = type;
+
             if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 actualType = type.GetGenericArguments()[0];
@@ -162,12 +167,14 @@ namespace DapperExtensions
         {
             parameter.Name = parameters.GetParameterName(parameter.ColumnName, parameterPrefix);
             parameters.Add(parameter.Name, parameter);
+
             return parameter.Name;
         }
 
         public static void SetValue(Type type, string propertyName, object obj, object value)
         {
             var property = type.GetProperty(propertyName);
+
             property.SetValue(obj, value, null);
         }
 
@@ -177,15 +184,21 @@ namespace DapperExtensions
             IList<BinaryExpression> _binaries = new List<BinaryExpression>();
 
             if (binary.Left is BinaryExpression left)
+            {
                 _binaries.Add(GetBinaryExpressions(left, out binaries));
+            }
 
             if (binary.Right is BinaryExpression right)
+            {
                 _binaries.Add(GetBinaryExpressions(right, out binaries));
-            else
-                if (!_binaries.Any(b => b == binary))
+            }
+            else if (!_binaries.Any(b => b == binary))
+            {
                 _binaries.Add(binary);
+            }
 
             binaries = _binaries;
+
             return binary;
         }
 
@@ -200,17 +213,25 @@ namespace DapperExtensions
             if (binary.Left != null)
             {
                 if (binary.Left is BinaryExpression left)
+                {
                     GetBinaryExpressions(left, out lBinaries);
+                }
                 else if (!lBinaries.Any(b => b == binary) && !rBinaries.Any(b => b == binary))
+                {
                     lBinaries.Add(binary);
+                }
             }
 
             if (binary.Right != null)
             {
                 if (binary.Right is BinaryExpression right)
+                {
                     GetBinaryExpressions(right, out rBinaries);
+                }
                 else if (!lBinaries.Any(b => b == binary) && !rBinaries.Any(b => b == binary))
+                {
                     rBinaries.Add(binary);
+                }
             }
 
             return lBinaries.Concat(rBinaries).ToList();
@@ -237,19 +258,20 @@ namespace DapperExtensions
 
         public static AssemblyBuilder CreateAssemblyBuilder(string assemblyName)
         {
-            AssemblyName name = new AssemblyName(assemblyName);
+            var name = new AssemblyName(assemblyName);
+
             return CreateAssemblyBuilder(name);
         }
 
         public static ModuleBuilder CreateModuleBuilder(AssemblyBuilder assemblyBuilder, string moduleName)
         {
-            return assemblyBuilder
-                .DefineDynamicModule(moduleName);
+            return assemblyBuilder.DefineDynamicModule(moduleName);
         }
 
         public static TypeBuilder CreateTypeBuilder(ModuleBuilder moduleBuilder, string typeName, Type baseType = null)
         {
-            string _typeName = string.Format("{0}{1}", typeName, DapperExtensions.GetNextGuid().ToString().Substring(0, 8));
+            string _typeName = string.Format("{0}{1}", typeName, DapperExtensions.GetNextGuid().ToString()[..8]);
+            
             return moduleBuilder
                 .DefineType(_typeName, TypeAttributes.Public |
                               TypeAttributes.Class |
@@ -266,7 +288,9 @@ namespace DapperExtensions
             typeBuilder.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
             foreach (var property in properties)
+            {
                 typeBuilder.DefineProperty(property.Name, property.Attributes, property.PropertyType, null);
+            }
 
 #if NETSTANDARD2_0
             return typeBuilder.CreateTypeInfo();
@@ -277,13 +301,13 @@ namespace DapperExtensions
 
         public static Type CreateMapType(TypeBuilder typeBuilder, Type entityType, Type extendedType)
         {
-            var baseType = typeof(Mapper.ClassMapper<>);
+            var baseType = typeof(ClassMapper<>);
             Type[] baseTypeArgs = { entityType };
-            baseType = baseType.MakeGenericType(baseTypeArgs);
 
+            baseType = baseType.MakeGenericType(baseTypeArgs);
             typeBuilder.DefineDefaultConstructor(MethodAttributes.Public | MethodAttributes.SpecialName | MethodAttributes.RTSpecialName);
 
-            Type[] binders = { typeof(Mapper.ClassMapper<>) };
+            Type[] binders = { typeof(ClassMapper<>) };
             var ctors = extendedType.GetConstructor(binders);
 
             foreach (var property in extendedType.GetProperties())
@@ -296,6 +320,7 @@ namespace DapperExtensions
                 if (method.Name == "Table")
                 {
                     MethodBuilder methodBuilder = typeBuilder.DefineMethod(method.Name, method.Attributes);
+
                     foreach (var parameter in method.GetParameters())
                     {
                         methodBuilder.DefineParameter(parameter.Position, parameter.Attributes, parameter.Name);
@@ -310,6 +335,7 @@ namespace DapperExtensions
                     methodIl.Emit(OpCodes.Ret);
                 }
             }
+
 #if NETSTANDARD2_0
             return typeBuilder.CreateTypeInfo();
 #else
@@ -319,16 +345,11 @@ namespace DapperExtensions
 
         public static Parameter GetParameter(Type entityType, ISqlGenerator sqlGenerator, string propertyName, object value)
         {
-            IClassMapper map = sqlGenerator.Configuration.GetMap(entityType);
-            if (map == null)
-                throw new NullReferenceException(String.Format("Map was not found for {0}", entityType));
-
+            IClassMapper map = sqlGenerator.Configuration.GetMap(entityType) ?? throw new NullReferenceException(string.Format("Map was not found for {0}", entityType));
             var entityPropertyName = propertyName.Split('_').Last();
 
-            IMemberMap propertyMap = map.Properties.SingleOrDefault(p => p.Name == entityPropertyName);
-            if (propertyMap == null)
-                throw new NullReferenceException(String.Format("{0} was not found for {1}", entityPropertyName, entityType));
-
+            IMemberMap propertyMap = map.Properties.SingleOrDefault(p => p.Name == entityPropertyName) ?? throw new NullReferenceException(String.Format("{0} was not found for {1}", entityPropertyName, entityType));
+            
             return new Parameter
             {
                 ColumnName = propertyMap.ColumnName,
@@ -344,9 +365,9 @@ namespace DapperExtensions
 
         public static PropertyInfo GetPropertyInfo(Type type, string propertyName)
         {
-            if (!(type.GetProperties().SingleOrDefault(x => x.Name.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase)) is PropertyInfo propertyInfo))
+            if (type.GetProperties().SingleOrDefault(x => x.Name.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase)) is not PropertyInfo propertyInfo)
             {
-                throw new System.Exception($"Property name '{propertyName}' not exists inside {type.FullName}. \n" +
+                throw new Exception($"Property name '{propertyName}' not exists inside {type.FullName}. \n" +
                     "Error on class: 'DapperPredicatesWrapper' - method: 'Sort'.");
             }
 

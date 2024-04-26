@@ -32,17 +32,25 @@ namespace DapperExtensions.Sql
         public override string GetSetSql(string sql, int firstResult, int maxResults, IDictionary<string, object> parameters)
         {
             if (string.IsNullOrEmpty(sql))
+            {
                 throw new ArgumentNullException(nameof(sql), $"{nameof(sql)} cannot be null.");
+            }
 
             if (parameters == null)
+            {
                 throw new ArgumentNullException(nameof(parameters), $"{nameof(parameters)} cannot be null.");
+            }
 
             if (!IsSelectSql(sql))
+            {
                 throw new ArgumentException($"{nameof(sql)} must be a SELECT statement.", nameof(sql));
+            }
 
             var result = string.Format("{0} LIMIT @maxResults OFFSET @firstResult", sql);
+
             parameters.Add("@firstResult", firstResult);
             parameters.Add("@maxResults", maxResults);
+
             return result;
         }
 
@@ -64,7 +72,6 @@ namespace DapperExtensions.Sql
         public override string GetCountSql(string sql)
         {
             var countSQL = base.GetCountSql(sql);
-
             var count = Regex.Matches(sql.ToUpperInvariant(), "SELECT").Count;
 
             if (count > 1)

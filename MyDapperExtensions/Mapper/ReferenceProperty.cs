@@ -15,7 +15,6 @@ namespace DapperExtensions.Mapper
         PropertyKey LeftProperty { get; }
         PropertyKey RightProperty { get; }
         string ComparatorSignal { get; }
-
         void SetIdentity(Guid identity);
         void SetParentIdentity(Guid identity);
     }
@@ -34,7 +33,6 @@ namespace DapperExtensions.Mapper
         public Comparator Comparator { get; private set; }
         public PropertyKey LeftProperty { get; private set; }
         public PropertyKey RightProperty { get; private set; }
-
         public string ComparatorSignal { get => Comparator.Description(); }
 
         public ReferenceProperty(PropertyInfo propertyInfo, Guid parentIdentity, Guid identity)
@@ -50,6 +48,7 @@ namespace DapperExtensions.Mapper
         {
             Identity = identity;
         }
+
         public void SetParentIdentity(Guid identity)
         {
             ParentIdentity = identity;

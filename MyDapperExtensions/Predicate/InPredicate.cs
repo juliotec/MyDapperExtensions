@@ -25,18 +25,14 @@ namespace DapperExtensions.Predicate
         public override string GetSql(ISqlGenerator sqlGenerator, IDictionary<string, object> parameters, bool isDml = false)
         {
             var columnName = GetColumnName(typeof(T), sqlGenerator, PropertyName);
-
             var @params = new List<string>();
 
             foreach (var item in Collection)
             {
-                var p = ReflectionHelper.GetParameter(typeof(T), sqlGenerator, PropertyName, item);
-                @params.Add(parameters.SetParameterName(p, sqlGenerator.Configuration.Dialect.ParameterPrefix));
+                @params.Add(parameters.SetParameterName(ReflectionHelper.GetParameter(typeof(T), sqlGenerator, PropertyName, item), sqlGenerator.Configuration.Dialect.ParameterPrefix));
             }
 
-            var commaDelimited = string.Join(", ", @params);
-
-            return $"({columnName.Trim()} {GetIsNotStatement(Not)}IN ({commaDelimited}))";
+            return $"({columnName.Trim()} {GetIsNotStatement(Not)}IN ({string.Join(", ", @params)}))";
         }
 
         private static string GetIsNotStatement(bool not)

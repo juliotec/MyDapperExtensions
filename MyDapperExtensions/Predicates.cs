@@ -47,7 +47,6 @@ namespace DapperExtensions
             DatabaseFunction databaseFunction = DatabaseFunction.None, string databaseFunctionParameters = "")
         {
             var properties = ReflectionHelper.GetNestedProperties<T>(propertyName, '.', out string propertyInfoName);
-
             var propertyInfo = typeof(T).GetProperties().SingleOrDefault(x => x.Name.Equals(propertyName, StringComparison.InvariantCultureIgnoreCase));
 
             return new FieldPredicate<T>
@@ -86,6 +85,7 @@ namespace DapperExtensions
         {
             var propertyInfo = ReflectionHelper.GetProperty(expression) as PropertyInfo;
             var propertyInfo2 = ReflectionHelper.GetProperty(expression2) as PropertyInfo;
+
             return new PropertyPredicate<T, T2>
             {
                 PropertyName = propertyInfo.Name,
@@ -142,6 +142,7 @@ namespace DapperExtensions
            
         {
             var propertyInfo = ReflectionHelper.GetProperty(expression) as PropertyInfo;
+
             return new BetweenPredicate<T>
             {
                 Not = not,
@@ -158,6 +159,7 @@ namespace DapperExtensions
         public static ISort Sort<T>(Expression<Func<T, object>> expression, bool ascending = true)
         {
             var propertyInfo = ReflectionHelper.GetProperty(expression) as PropertyInfo;
+
             return new Sort
             {
                 PropertyName = propertyInfo.Name,
@@ -186,6 +188,7 @@ namespace DapperExtensions
         public static IInPredicate In<T>(Expression<Func<T, object>> expression, ICollection collection, bool not = false)
         {
             var propertyInfo = ReflectionHelper.GetProperty(expression) as PropertyInfo;
+
             return new InPredicate<T>(collection, propertyInfo.Name, not);
         }
 
@@ -205,6 +208,4 @@ namespace DapperExtensions
             return new VirtualPredicate(comparable, op, value, not);
         }
     }
-
-
 }

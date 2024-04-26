@@ -79,7 +79,6 @@ namespace DapperExtensions.Sql
             }
 
             MapTables(classMap);
-
             AllColumns = GetColumns().ToList();
 
             var sql = new StringBuilder(string.Format("SELECT {0} FROM {1}",
@@ -98,7 +97,6 @@ namespace DapperExtensions.Sql
                 {
                     var property = (s.Properties?.Count > 1) ? s.Properties?.Last() : null;
                     var type = property?.DeclaringType;
-
                     var map = (type != null) ? Configuration.GetMap(type) : classMap;
                     var propertyName = property?.Name ?? s.PropertyName;
 
@@ -124,7 +122,6 @@ namespace DapperExtensions.Sql
             }
 
             var innerSql = new StringBuilder(Select(classMap, predicate, sort, parameters, colsToSelect, includedProperties));
-
             var partitionBy = GetPartitionBy();
 
             return Configuration.Dialect.GetPagingSql(innerSql.ToString(), page, resultsPerPage, parameters, partitionBy);
@@ -151,6 +148,7 @@ namespace DapperExtensions.Sql
             }
 
             var orderBy = sort.Select(s => GetColumnName(classMap, s.PropertyName, false) + (s.Ascending ? " ASC" : " DESC")).AppendStrings();
+            
             innerSql.Append(" ORDER BY ").Append(orderBy);
 
             return Configuration.Dialect.GetSetSql(innerSql.ToString(), firstResult, maxResults, parameters);
@@ -212,8 +210,8 @@ namespace DapperExtensions.Sql
             MapTables(classMap);
 
             var i = 0;
-            AllColumns = GetColumns().ToList();
 
+            AllColumns = GetColumns().ToList();
             AllColumns = AllColumns.Select(c => new Column
             {
                 Alias = c.Alias,
@@ -237,16 +235,16 @@ namespace DapperExtensions.Sql
             var columnNames = AllColumns
                 .Where(p => !(p.Property.Ignored || p.Property.IsReadOnly || p.Property.KeyType == KeyType.Identity || p.Property.KeyType == KeyType.TriggerIdentity))
                 .Select(p => GetColumnName(p, false, false)).ToList();
-
             var sql = $"INSERT INTO {GetTableName(classMap)} ({columnNames.AppendStrings()}) VALUES ({parameters.AppendStrings()})";
-
             var triggerIdentityColumn = classMap.Properties.Where(p => p.KeyType == KeyType.TriggerIdentity).ToList();
             var sequenceIdentityColumn = classMap.Properties.Where(p => p.KeyType == KeyType.SequenceIdentity).ToList();
 
             if (triggerIdentityColumn.Count > 0)
             {
                 if (triggerIdentityColumn.Count > 1)
+                {
                     throw new ArgumentException("TriggerIdentity generator cannot be used with multi-column keys");
+                }
 
                 sql += $" RETURNING {triggerIdentityColumn.Select(p => GetColumnName(classMap, p, false, includePrefix: false)).First()} INTO {Configuration.Dialect.ParameterPrefix}IdOutParam";
             }
@@ -269,8 +267,8 @@ namespace DapperExtensions.Sql
             MapTables(classMap);
 
             var i = 0;
-            AllColumns = GetColumns().ToList();
 
+            AllColumns = GetColumns().ToList();
             AllColumns = AllColumns.Select(c => new Column
             {
                 Alias = c.Alias,
@@ -311,7 +309,9 @@ namespace DapperExtensions.Sql
             }
 
             var sql = new StringBuilder($"DELETE FROM {GetTableName(classMap)}");
+
             sql.Append(" WHERE ").Append(predicate.GetSql(this, parameters, true));
+
             return sql.ToString();
         }
 
@@ -328,7 +328,10 @@ namespace DapperExtensions.Sql
         private static IMemberMap GetPropertyMap(IClassMapper mainMap, MemberInfo propertyInfo)
         {
             if (!mainMap.Properties.Any(p => p.MemberInfo == propertyInfo))
+            {
                 throw new KeyNotFoundException($"The property {propertyInfo.Name} was not found in {mainMap.EntityType.Name} entity");
+            }
+            
             return mainMap
                 .Properties
                 .Where(p => p.MemberInfo == propertyInfo)
@@ -367,17 +370,15 @@ namespace DapperExtensions.Sql
             }
 
             sql.Append(' ').Append(Enum.GetName(typeof(JoinType), joinType)).Append(" join ").Append(table.Name).Append(' ').Append(table.Alias).Append(" on ");
-
             joins.AppendLine(sql.ToString());
 
             var leftClasMap = Configuration.GetMap(table.EntityType);
             var rightClasMap = mainMap;
-
             var properties = mainMap
                .References
                .Where(r => r.ParentIdentity == mainMap.Identity && r.PropertyInfo == table.PropertyInfo)
-              .SelectMany(c => c.ReferenceProperties)
-              .ToList();
+               .SelectMany(c => c.ReferenceProperties)
+               .ToList();
 
             var isFirstComparison = true;
 
@@ -403,6 +404,7 @@ namespace DapperExtensions.Sql
             }
 
             result.Append(joins);
+
             return result.ToString();
         }
 
@@ -423,7 +425,6 @@ namespace DapperExtensions.Sql
                     .Where(t => t.Identity == dependent.ParentIdentity)
                     .Select(c => c.EntityType)
                     .Single();
-
                 var map = Configuration.GetMap(parentEntity);
 
                 result.AppendLine(GetJointTables(map, dependent, parameters, includedProperties));
@@ -443,14 +444,17 @@ namespace DapperExtensions.Sql
         private string GetJoinFromSqlInjection(SqlInjection sqlInjection)
         {
             if (sqlInjection == null)
+            {
                 return "";
+            }
+
             var map = Configuration.GetMap(sqlInjection.EntityType);
             var sql = sqlInjection.Sql;
-
             var columName = map.Properties
                .Where(p => p.Name.Equals(sqlInjection.Property, StringComparison.InvariantCultureIgnoreCase))
                .Select(c => c.ColumnName)
                .FirstOrDefault();
+
             return string.Format(sql, GetAliasFromTableName(map.Identity) + "." + columName);
         }
 
@@ -464,7 +468,6 @@ namespace DapperExtensions.Sql
             }
 
             var tableName = new StringBuilder();
-
             var mainTableName = GetTableName(map, true);
             var joints = _includeRelacionalEntities ? GetAllJointTables(map, map.TableName, parameters, includedProperties: includedProperties) : "";
             var sqlInjection = GetJoinFromSqlInjection(Configuration.GetOrSetSqlInjection(map.EntityType));
@@ -472,10 +475,14 @@ namespace DapperExtensions.Sql
             tableName.AppendLine(mainTableName);
 
             if (!string.IsNullOrEmpty(joints))
+            {
                 tableName.AppendLine(joints);
+            }
 
             if (!tableName.ToString().Contains(sqlInjection))
+            {
                 tableName.AppendLine(sqlInjection);
+            }
 
             return tableName.ToString();
         }
@@ -511,7 +518,9 @@ namespace DapperExtensions.Sql
         public virtual string GetColumnName(IClassMapper map, IMemberMap property, bool includeAlias, bool isDml = false, bool includePrefix = true)
         {
             if (isDml)
+            {
                 return Configuration.Dialect.GetColumnName(GetTableName(map), property.ColumnName, "");
+            }
 
             if (AllColumns?.Any(c => c.Property == property) == true)
             {
@@ -529,12 +538,8 @@ namespace DapperExtensions.Sql
 
         public virtual string GetColumnName(IClassMapper map, string propertyName, bool includeAlias, bool includePrefix = true)
         {
-            var propertyMap = map?.Properties?.SingleOrDefault(p => propertyName.Equals(p.Name, StringComparison.InvariantCultureIgnoreCase));
-            if (propertyMap == null)
-            {
-                throw new ArgumentException(string.Format("Could not find '{0}' in Mapping.", propertyName));
-            }
-
+            var propertyMap = (map?.Properties?.SingleOrDefault(p => propertyName.Equals(p.Name, StringComparison.InvariantCultureIgnoreCase))) ?? throw new ArgumentException(string.Format("Could not find '{0}' in Mapping.", propertyName));
+            
             return GetColumnName(map, propertyMap, includeAlias, false, includePrefix);
         }
 
@@ -561,16 +566,15 @@ namespace DapperExtensions.Sql
         {
             var assemblyBuilder = ReflectionHelper.CreateAssemblyBuilder(mapper.EntityType.Assembly.GetName().Name);
             var moduleBuilder = ReflectionHelper.CreateModuleBuilder(assemblyBuilder, "VirtualModules.dll");
-
             var tbEntity = ReflectionHelper.CreateTypeBuilder(moduleBuilder, mapper.EntityType.Name, mapper.EntityType);
             var virtualEntity = ReflectionHelper.CreateVirtualType(tbEntity, mapper.EntityType);
-
             var tbMapper = ReflectionHelper.CreateTypeBuilder(moduleBuilder, mapper.EntityType.Name + "Map", mapper.GetType());
+
             ReflectionHelper.CreateMapType(tbMapper, virtualEntity, mapper.GetType());
 
             var virtualMapInstance = Configuration.GetMap(virtualEntity);
-
             object[] argsP = { virtualEntity };
+
             virtualMapInstance.GetType().GetMethod("SetEntityType").Invoke(virtualMapInstance, argsP);
 
             return virtualMapInstance;
@@ -580,8 +584,8 @@ namespace DapperExtensions.Sql
         {
             var originalMap = Configuration.GetMap(entityType);
             var virtualClassMapper = GetVirtualClassMapper(originalMap);
-
             object[] argsP = { parentIdentity };
+
             virtualClassMapper.GetType().GetMethod("SetParentIdentity").Invoke(virtualClassMapper, argsP);
 
             return virtualClassMapper;
@@ -607,8 +611,11 @@ namespace DapperExtensions.Sql
             if (isVirtual)
             {
                 var identity = TablesAdded.Where(c => c.Identity == parentIdentity && c.IsVirtual).ToList();
+
                 if (identity.Count > 0)
+                {
                     parentIdentity = identity.Select(i => i.Identity).Last();
+                }
 
                 table.LastIdentity = table.Identity;
 
@@ -630,21 +637,23 @@ namespace DapperExtensions.Sql
                 return virtualReferenceMap;
             }
             else
+            {
                 return null;
+            }
         }
 
         private void ProcessRelationationalIdentities(ref IClassMapper mapper, ref IClassMapper parent, PropertyInfo propertyInfo, IList<IReferenceMap> includedProperties)
         {
             if (includedProperties?.Count > 0)
+            {
                 if (mapper.Identity == parent.Identity)
                 {
                     var parentIdentity = includedProperties[0].ParentIdentity;
+
                     mapper.SetIdentity(parentIdentity);
                     mapper.SetParentIdentity(parentIdentity);
-
                     parent.SetIdentity(parentIdentity);
                     parent.SetParentIdentity(parentIdentity);
-
                     SetReferencePropertiesParentIdentity(mapper, parentIdentity);
                     SetReferencePropertiesParentIdentity(parent, parentIdentity);
                 }
@@ -660,6 +669,7 @@ namespace DapperExtensions.Sql
                         SetReferencePropertiesParentIdentity(mapper, childIdentityFromIncluded.Identity);
                     }
                 }
+            }
         }
 
         private IList<Table> ProcessReference(IReferenceMap reference, IClassMapper mapper, IClassMapper parent, IClassMapper virtualReferenceMap, IList<IReferenceMap> includedProperties)
@@ -668,15 +678,14 @@ namespace DapperExtensions.Sql
             (virtualMap != null
             && includedProperties.Any(i => i.ParentIdentity == virtualMap.Identity && i.PropertyInfo == reference.PropertyInfo))
             ? virtualMap : mapper;
-
             var tables = new List<Table>();
-
             var map = Configuration.GetMap(reference.EntityType);
-
             var isVirtual = TablesAdded.Any(a => a.Identity == map.Identity && a.ParentIdentity == parent.Identity);
+
             if (!isVirtual || (isVirtual && !TablesAdded.Any(a => a.ParentIdentity == map.Identity && a.IsVirtual)))
             {
                 var topParentParam = getTopParentMap(virtualReferenceMap, reference);
+
                 tables.AddRange(GetAllMappedTables(map, mapper, reference.PropertyInfo, isVirtual, includedProperties));
             }
 
@@ -693,8 +702,10 @@ namespace DapperExtensions.Sql
             var tables = new List<Table>();
 
             if (includedProperties?.Count > 0)
+            {
                 foreach (var reference in getReferences(mapper))
                     tables.AddRange(ProcessReference(reference, mapper, parent, virtualReferenceMap, includedProperties));
+            }
 
             return tables;
         }
@@ -706,7 +717,6 @@ namespace DapperExtensions.Sql
 
             //Set new Identity and Parent Identity to most top map.
             ProcessRelationationalIdentities(ref parentClassMapper, ref topParentMap, propertyInfo, includedProperties);
-
             TableCount++;
             _table = new Table
             {
@@ -728,9 +738,9 @@ namespace DapperExtensions.Sql
             {
                 tables.Add(_table);
                 TablesAdded.Add(_table);
-
                 tables.AddRange(ProcessReferences(parentClassMapper, topParentMap, virtualReferenceMap, includedProperties));
             }
+
             return tables;
         }
         public void MapTables(IClassMapper classMap, IList<IReferenceMap> includedProperties = null)
@@ -739,7 +749,6 @@ namespace DapperExtensions.Sql
             TableCount = 0;
             TablesAdded.Clear();
             TableReferencesAdded.Clear();
-
             Tables = GetAllMappedTables(classMap, classMap, null, false, includedProperties).ToList();
         }
 
@@ -749,9 +758,8 @@ namespace DapperExtensions.Sql
             MapTables(classMap, includedProperties);
 
             var i = 0;
-            //AllColumns = GetColumns(classMap, classMap.Identity).ToList();
-            AllColumns = GetColumns().ToList();
 
+            AllColumns = GetColumns().ToList();
             AllColumns = AllColumns.Select(c => new Column
             {
                 Alias = c.Alias,
@@ -765,8 +773,8 @@ namespace DapperExtensions.Sql
             var columns = AllColumns
                 .Where(col => !col.Property.Ignored && (colsToSelect == null || colsToSelect?.Any(c => c.PropertyName.Equals(col.Property.ColumnName, StringComparison.OrdinalIgnoreCase)) == true))
                 .Select(col => GetColumnName(col, true));
-
             var result = columns.AppendStrings();
+
             return string.IsNullOrEmpty(result) ? throw new NotSupportedException("Query with empty ClassMapper is not supported.") : result;
         }
 
@@ -789,6 +797,7 @@ namespace DapperExtensions.Sql
                 var refResult = GetReference(parentTable, parentReference);
                 return !string.IsNullOrEmpty(refResult) ? refResult + "_" + _reference : _reference;
             }
+
             return _reference;
         }
 
@@ -796,7 +805,10 @@ namespace DapperExtensions.Sql
         {
             var reference = GetReference(table);
 
-            string getParentReference(IMemberMap map) => map.ParentProperty != null ? map.ParentProperty.Name : string.Empty;
+            static string getParentReference(IMemberMap map)
+            {
+                return map.ParentProperty != null ? map.ParentProperty.Name : string.Empty;
+            }
 
             var map = table.ClassMapper ?? Configuration.GetMap(table.EntityType);
             var columnIndex = 0;
@@ -816,7 +828,9 @@ namespace DapperExtensions.Sql
             var columns = new List<IColumn>();
 
             foreach (var table in Tables)
+            {
                 columns.AddRange(GetColumns(table));
+            }
 
             return columns;
         }

@@ -61,18 +61,18 @@ namespace DapperExtensions.Mapper
         public ClassMapper()
         {
             PropertyTypeKeyTypeMapping = new Dictionary<Type, KeyType>
-                                             {
-                                                 { typeof(byte), KeyType.Identity }, { typeof(byte?), KeyType.Identity },
-                                                 { typeof(sbyte), KeyType.Identity }, { typeof(sbyte?), KeyType.Identity },
-                                                 { typeof(short), KeyType.Identity }, { typeof(short?), KeyType.Identity },
-                                                 { typeof(ushort), KeyType.Identity }, { typeof(ushort?), KeyType.Identity },
-                                                 { typeof(int), KeyType.Identity }, { typeof(int?), KeyType.Identity },
-                                                 { typeof(uint), KeyType.Identity}, { typeof(uint?), KeyType.Identity },
-                                                 { typeof(long), KeyType.Identity }, { typeof(long?), KeyType.Identity },
-                                                 { typeof(ulong), KeyType.Identity }, { typeof(ulong?), KeyType.Identity },
-                                                 { typeof(BigInteger), KeyType.Identity }, { typeof(BigInteger?), KeyType.Identity },
-                                                 { typeof(Guid), KeyType.Guid }, { typeof(Guid?), KeyType.Guid },
-                                             };
+            {
+                { typeof(byte), KeyType.Identity }, { typeof(byte?), KeyType.Identity },
+                { typeof(sbyte), KeyType.Identity }, { typeof(sbyte?), KeyType.Identity },
+                { typeof(short), KeyType.Identity }, { typeof(short?), KeyType.Identity },
+                { typeof(ushort), KeyType.Identity }, { typeof(ushort?), KeyType.Identity },
+                { typeof(int), KeyType.Identity }, { typeof(int?), KeyType.Identity },
+                { typeof(uint), KeyType.Identity}, { typeof(uint?), KeyType.Identity },
+                { typeof(long), KeyType.Identity }, { typeof(long?), KeyType.Identity },
+                { typeof(ulong), KeyType.Identity }, { typeof(ulong?), KeyType.Identity },
+                { typeof(BigInteger), KeyType.Identity }, { typeof(BigInteger?), KeyType.Identity },
+                { typeof(Guid), KeyType.Guid }, { typeof(Guid?), KeyType.Guid },
+            };
 
             Properties = new List<IMemberMap>();
             References = new List<IReferenceMap>();
@@ -103,6 +103,7 @@ namespace DapperExtensions.Mapper
             var type = typeof(T);
             var hasDefinedKey = Properties.Any(p => p.KeyType != KeyType.NotAKey);
             MemberMap keyMap = null;
+
             foreach (var propertyInfo in type.GetProperties(BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public))
             {
                 if (Properties.Any(p => p.Name.Equals(propertyInfo.Name, StringComparison.InvariantCultureIgnoreCase)))
@@ -116,6 +117,7 @@ namespace DapperExtensions.Mapper
                 }
 
                 var map = Map(propertyInfo);
+
                 if (!hasDefinedKey)
                 {
                     if (string.Equals(map.Name, "id", StringComparison.InvariantCultureIgnoreCase))
@@ -142,6 +144,7 @@ namespace DapperExtensions.Mapper
 
             GuardForDuplicateReferenceMap(result);
             References.Add(result);
+
             return result;
         }
 
@@ -164,6 +167,7 @@ namespace DapperExtensions.Mapper
             {
                 result = Map(propertyInfo as PropertyInfo);
             }
+
             return result;
         }
 
@@ -173,6 +177,7 @@ namespace DapperExtensions.Mapper
         protected virtual MemberMap Map(PropertyInfo propertyInfo, MemberMap parent = null)
         {
             var result = new MemberMap(propertyInfo, this, parent: parent);
+
             if (GuardForDuplicatePropertyMap(result))
             {
                 result = (MemberMap)Properties.FirstOrDefault(p => p.Name.Equals(result.Name) && p.ParentProperty == result.ParentProperty);
@@ -181,6 +186,7 @@ namespace DapperExtensions.Mapper
             {
                 Properties.Add(result);
             }
+
             return result;
         }
 
@@ -191,14 +197,9 @@ namespace DapperExtensions.Mapper
         protected virtual void UnMap(Expression<Func<T, object>> expression)
         {
             var propertyInfo = ReflectionHelper.GetProperty(expression) as PropertyInfo;
-            var mapping = Properties.SingleOrDefault(w => w.Name == propertyInfo.Name);
-
-            if (mapping == null)
-            {
-                throw new ApplicationException("Unable to UnMap because mapping does not exist.");
-            }
-
-            this.Properties.Remove(mapping);
+            var mapping = Properties.SingleOrDefault(w => w.Name == propertyInfo.Name) ?? throw new ApplicationException("Unable to UnMap because mapping does not exist.");
+            
+            Properties.Remove(mapping);
         }
 
         private bool GuardForDuplicatePropertyMap(MemberMap result)

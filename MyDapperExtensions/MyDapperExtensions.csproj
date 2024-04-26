@@ -2,9 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <Platforms>AnyCPU</Platforms>
     <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
     <Title>MyDapperExtensions</Title>
     <PackageProjectUrl>https://github.com/juliotec/MyDapperExtensions</PackageProjectUrl>

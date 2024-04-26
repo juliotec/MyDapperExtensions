@@ -26,10 +26,14 @@ namespace DapperExtensions.Sql
         public override string GetPagingSql(string sql, int page, int resultsPerPage, IDictionary<string, object> parameters, string partitionBy)
         {
             if (string.IsNullOrEmpty(partitionBy))
+            {
                 throw new ArgumentNullException(nameof(partitionBy), $"{nameof(partitionBy)} cannot be null.");
+            }
 
             if (string.IsNullOrWhiteSpace(partitionBy))
+            {
                 throw new ArgumentNullException(nameof(partitionBy), $"{nameof(partitionBy)} cannot be null.");
+            }
 
             var toSkip = GetStartValue(page, resultsPerPage);
             var topLimit = toSkip + resultsPerPage;
@@ -71,21 +75,29 @@ namespace DapperExtensions.Sql
         public override string GetSetSql(string sql, int firstResult, int maxResults, IDictionary<string, object> parameters)
         {
             if (string.IsNullOrEmpty(sql))
+            {
                 throw new ArgumentNullException(nameof(sql), $"{nameof(sql)} cannot be null.");
+            }
 
             if (string.IsNullOrWhiteSpace(sql))
+            {
                 throw new ArgumentNullException(nameof(sql), $"{nameof(sql)} cannot be null.");
+            }
 
             if (parameters == null)
+            {
                 throw new ArgumentNullException(nameof(parameters), $"{nameof(parameters)} cannot be null.");
+            }
 
             if (!IsSelectSql(sql))
+            {
                 throw new ArgumentException($"{nameof(sql)} must be a SELECT statement.", nameof(sql));
+            }
 
             //TODO: Melhorar a forma de pegar o line number para reduzir o custo da consulta
             var sb = new StringBuilder();
-            sb.AppendLine("SELECT * FROM (");
 
+            sb.AppendLine("SELECT * FROM (");
             sb.AppendLine("SELECT ss_dapper_1.*, liner.LINE_NUMBER FROM (");
             sb.Append(sql);
             sb.AppendLine(") ss_dapper_1 ");
@@ -93,7 +105,6 @@ namespace DapperExtensions.Sql
             sb.AppendLine("select distinct {2} from ({3}))) liner on {4}");
             sb.AppendLine(") ss_dapper_2 ");
             sb.AppendLine("WHERE ss_dapper_2.line_number > :toSkip AND ss_dapper_2.line_number <= :topLimit");
-
             parameters.Add(":topLimit", maxResults);
             parameters.Add(":toSkip", firstResult);
 
@@ -104,12 +115,12 @@ namespace DapperExtensions.Sql
         {
             if (value[0] == '`')
             {
-                value = value.Substring(1);
+                value = value[1..];
             }
 
             if (value.EndsWith("`"))
             {
-                value = value.Substring(0, value.Length - 1);
+                value = value[..^1];
             }
 
             return $"{OpenQuote}{value}{CloseQuote}";
@@ -144,6 +155,7 @@ namespace DapperExtensions.Sql
         {
             var conn = connection as OracleConnection;
             var info = conn.GetSessionInfo();
+
             info.Sort = "BINARY_CI"; // NLS_SORT:
             info.Comparison = "LINGUISTIC"; // NLS_COMP:
             conn.SetSessionInfo(info);
@@ -157,6 +169,7 @@ namespace DapperExtensions.Sql
             }
 
             var result = new StringBuilder();
+
             if (!string.IsNullOrWhiteSpace(schemaName))
             {
                 result.AppendFormat(schemaName + ".");
@@ -168,18 +181,24 @@ namespace DapperExtensions.Sql
             {
                 result.AppendFormat(" {0}", alias);
             }
+
             return result.ToString();
         }
 
         public override string GetColumnName(string prefix, string columnName, string alias)
         {
             if (string.IsNullOrEmpty(columnName))
+            {
                 throw new ArgumentNullException(nameof(columnName), $"{nameof(columnName)} cannot be null or empty.");
+            }
 
             if (string.IsNullOrWhiteSpace(columnName))
+            {
                 throw new ArgumentNullException(nameof(columnName), $"{nameof(columnName)} cannot be null or empty.");
+            }
 
             var result = new StringBuilder();
+
             if (!string.IsNullOrWhiteSpace(prefix))
             {
                 result.AppendFormat(prefix + ".");

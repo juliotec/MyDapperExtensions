@@ -3,8 +3,11 @@ using DapperExtensions.Mapper;
 using DapperExtensions.Predicate;
 using DapperExtensions.Sql;
 using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Dynamic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
@@ -43,7 +46,7 @@ namespace DapperExtensions
 
     public class DapperImplementor : IDapperImplementor
     {
-        private static readonly Dictionary<Type, IList<IProjection>> ColsBuffer = new Dictionary<Type, IList<IProjection>>();
+        private static readonly Dictionary<Type, IList<IProjection>> ColsBuffer = new();
 
         public DapperImplementor(ISqlGenerator sqlGenerator)
         {
@@ -63,6 +66,7 @@ namespace DapperExtensions
             var cols = GetBufferedCols<TOut>();
             var obj = InternalGet<TIn>(connection, id, transaction, commandTimeout, cols, includedProperties);
             var f = func.Compile();
+
             return f.Invoke(obj);
         }
 
@@ -76,7 +80,9 @@ namespace DapperExtensions
             var sequenceIdentityColumn = classMap.Properties.Where(p => p.KeyType == KeyType.SequenceIdentity).ToList();
 
             foreach (var e in entities)
+            {
                 InternalInsert(connection, e, transaction, commandTimeout, classMap, nonIdentityKeyProperties, identityColumn, triggerIdentityColumn, sequenceIdentityColumn);
+            }
         }
 
         public dynamic Insert<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout)
@@ -103,29 +109,34 @@ namespace DapperExtensions
         public bool UpdatePartial<TIn, TOut>(IDbConnection connection, TIn entity, Expression<Func<TIn, TOut>> func, IDbTransaction transaction, int? commandTimeout, bool ignoreAllKeyProperties = false) where TIn : class
         {
             var cols = GetBufferedCols<TOut>();
-            return InternalUpdate<TIn>(connection, entity, transaction, cols, commandTimeout, ignoreAllKeyProperties);
+
+            return InternalUpdate(connection, entity, transaction, cols, commandTimeout, ignoreAllKeyProperties);
         }
 
         public void UpdatePartial<TIn, TOut>(IDbConnection connection, IEnumerable<TIn> entities, Expression<Func<TIn, TOut>> func, IDbTransaction transaction, int? commandTimeout, bool ignoreAllKeyProperties = false) where TIn : class
         {
             var cols = GetBufferedCols<TOut>();
-            InternalUpdate<TIn>(connection, entities, transaction, cols, commandTimeout, ignoreAllKeyProperties);
+
+            InternalUpdate(connection, entities, transaction, cols, commandTimeout, ignoreAllKeyProperties);
         }
 
         public bool Delete<T>(IDbConnection connection, T entity, IDbTransaction transaction, int? commandTimeout)
         {
-            return InternalDelete<T>(connection, entity, transaction, commandTimeout);
+            return InternalDelete(connection, entity, transaction, commandTimeout);
         }
 
         public void Delete<T>(IDbConnection connection, IEnumerable<T> entities, IDbTransaction transaction, int? commandTimeout)
         {
             foreach (var e in entities)
-                InternalDelete<T>(connection, e, transaction, commandTimeout);
+            {
+                InternalDelete(connection, e, transaction, commandTimeout);
+            }
         }
 
         public bool Delete<T>(IDbConnection connection, object predicate, IDbTransaction transaction, int? commandTimeout)
         {
             GetMapAndPredicate<T>(predicate, out var classMap, out var wherePredicate);
+
             return Delete<T>(connection, classMap, wherePredicate, transaction, commandTimeout);
         }
 
@@ -148,9 +159,9 @@ namespace DapperExtensions
         {
             var cols = GetBufferedCols<TOut>();
             var te = InternalGetListAutoMap<TIn>(connection, predicate, sort, transaction, commandTimeout, buffered, cols, includedProperties).ToList();
-
             // Transform TIn object to Anonymous type
             var f = func.Compile();
+
             return te.Select(i => f.Invoke(i));
         }
 
@@ -173,9 +184,9 @@ namespace DapperExtensions
         {
             var cols = GetBufferedCols<TOut>();
             var te = InternalGetPageAutoMap<TIn>(connection, predicate, sort, page, resultsPerPage, transaction, commandTimeout, buffered, cols, includedProperties).ToList();
-
             // Transform TIn object to Anonymous type
             var f = func.Compile();
+
             return te.Select(i => f.Invoke(i));
         }
 
@@ -188,31 +199,35 @@ namespace DapperExtensions
         {
             var cols = GetBufferedCols<TOut>();
             var te = InternalGetSet<TIn>(connection, predicate, sort, firstResult, maxResults, transaction, commandTimeout, buffered, cols, includedProperties).ToList();
-
             // Transform TIn object to Anonymous type
             var f = func.Compile();
+
             return te.Select(i => f.Invoke(i));
         }
 
         private static object GetParameterValue(KeyValuePair<string, object> parameter)
         {
             var value = parameter.Value;
+
             if (parameter.Value is JToken)
             {
                 var val = (JToken)value;
                 value = Convert.ChangeType(val, val.Type.GetType());
             }
+
             return value;
         }
 
         public int Count<T>(IDbConnection connection, object predicate, IDbTransaction transaction, int? commandTimeout, IList<IReferenceMap> includedProperties = null)
         {
             GetMapAndPredicate<T>(predicate, out var classMap, out var wherePredicate);
+
             var parameters = new Dictionary<string, object>();
             var sql = SqlGenerator.Count(classMap, wherePredicate, parameters, includedProperties);
-
             var dynamicParameters = GetDynamicParameters(parameters);
+            
             LastExecutedCommand = sql;
+            
             return (int)connection.Query(sql, dynamicParameters, transaction, false, commandTimeout, CommandType.Text).Single().Total;
         }
 
@@ -238,6 +253,7 @@ namespace DapperExtensions
             var dynamicParameters = GetDynamicParameters(parameters);
 
             LastExecutedCommand = sql;
+
             var query = connection.Query<dynamic>(sql, dynamicParameters, transaction, buffered, commandTimeout, CommandType.Text);
 
             return MappColumns<T>(query);
@@ -250,6 +266,7 @@ namespace DapperExtensions
             var dynamicParameters = GetDynamicParameters(parameters);
 
             LastExecutedCommand = sql;
+
             var query = connection.Query<dynamic>(sql, dynamicParameters, transaction, buffered, commandTimeout, CommandType.Text);
 
             return MappColumns<T>(query);
@@ -267,6 +284,7 @@ namespace DapperExtensions
             var dynamicParameters = GetDynamicParameters(parameters);
 
             LastExecutedCommand = sql;
+
             return connection.Query<T>(sql, dynamicParameters, transaction, buffered, commandTimeout, CommandType.Text);
         }
 
@@ -277,6 +295,7 @@ namespace DapperExtensions
             var dynamicParameters = GetDynamicParameters(parameters);
 
             LastExecutedCommand = sql;
+
             return connection.Execute(sql, dynamicParameters, transaction, commandTimeout, CommandType.Text) > 0;
         }
 
@@ -309,6 +328,7 @@ namespace DapperExtensions
             var keys = classMap.Properties.Where(p => p.KeyType != KeyType.NotAKey);
             IDictionary<string, Func<object>> paramValues = null;
             var predicates = new List<IPredicate>();
+
             if (!isSimpleType)
             {
                 paramValues = ReflectionHelper.GetObjectValues(id);
@@ -317,14 +337,15 @@ namespace DapperExtensions
             foreach (var key in keys)
             {
                 var value = id;
+
                 if (!isSimpleType)
                 {
                     value = paramValues[key.Name];
                 }
 
                 var predicateType = typeof(FieldPredicate<>).MakeGenericType(classMap.EntityType);
-
                 var fieldPredicate = Activator.CreateInstance(predicateType) as IFieldPredicate;
+
                 fieldPredicate.Not = false;
                 fieldPredicate.Operator = Operator.Eq;
                 fieldPredicate.PropertyName = key.Name;
@@ -338,6 +359,7 @@ namespace DapperExtensions
         protected static IPredicate GetKeyPredicate<T>(IClassMapper classMap, T entity)
         {
             var whereFields = classMap.Properties.Where(p => p.KeyType != KeyType.NotAKey && p.KeyType != KeyType.ForeignKey);
+            
             if (!whereFields.Any())
             {
                 throw new ArgumentException("At least one Key column must be defined.");
@@ -345,6 +367,7 @@ namespace DapperExtensions
 
             IList<IPredicate> predicates = new List<IPredicate>();
             var predicateType = typeof(FieldPredicate<>).MakeGenericType(classMap.EntityType);
+
             foreach (var field in whereFields)
             {
                 var fieldPredicate = Activator.CreateInstance(predicateType) as IFieldPredicate;
@@ -366,7 +389,7 @@ namespace DapperExtensions
             
             foreach (var kvp in ReflectionHelper.GetObjectValues(entity).Where(property => notIgnoredColumns.Any(c => c.Name == property.Key)))
             {
-                AddPredicates(predicateType, predicates, kvp.Key, kvp.Value is Func<object> ? kvp.Value() : kvp.Value);
+                AddPredicates(predicateType, predicates, kvp.Key, kvp.Value is not null ? kvp.Value() : kvp.Value);
             }
 
             // predicates will be empty if entity is not KeyValuePair
@@ -386,9 +409,7 @@ namespace DapperExtensions
 
         private static void AddPredicates(Type predicateType, IList<IPredicate> predicates, string key, object value)
         {
-            var fieldPredicate = Activator.CreateInstance(predicateType) as IFieldPredicate;
-            
-            if (fieldPredicate == null)
+            if (Activator.CreateInstance(predicateType) is not IFieldPredicate fieldPredicate)
             {
                 return;
             }
@@ -404,10 +425,12 @@ namespace DapperExtensions
         {
             var parameters = new Dictionary<string, object>();
             var sql = new StringBuilder();
+
             foreach (var item in predicate.Items)
             {
                 var classMap = SqlGenerator.Configuration.GetMap(item.Type);
                 var itemPredicate = item.Value as IPredicate;
+
                 if (itemPredicate == null && item.Value != null)
                 {
                     itemPredicate = GetPredicate(classMap, item.Value);
@@ -417,19 +440,21 @@ namespace DapperExtensions
             }
 
             var dynamicParameters = GetDynamicParameters(parameters);
-
             var grid = connection.QueryMultiple(sql.ToString(), dynamicParameters, transaction, commandTimeout, CommandType.Text);
+
             return new GridReaderResultReader(grid);
         }
 
         protected SequenceReaderResultReader GetMultipleBySequence(IDbConnection connection, GetMultiplePredicate predicate, IDbTransaction transaction, int? commandTimeout, IList<IReferenceMap> includedProperties = null)
         {
             IList<SqlMapper.GridReader> items = new List<SqlMapper.GridReader>();
+
             foreach (var item in predicate.Items)
             {
                 var parameters = new Dictionary<string, object>();
                 var classMap = SqlGenerator.Configuration.GetMap(item.Type);
                 var itemPredicate = item.Value as IPredicate;
+
                 if (itemPredicate == null && item.Value != null)
                 {
                     itemPredicate = GetPredicate(classMap, item.Value);
@@ -437,8 +462,8 @@ namespace DapperExtensions
 
                 var sql = SqlGenerator.Select(classMap, itemPredicate, item.Sort, parameters, null, includedProperties);
                 var dynamicParameters = GetDynamicParameters(parameters);
-
                 var queryResult = connection.QueryMultiple(sql, dynamicParameters, transaction, commandTimeout, CommandType.Text);
+                
                 items.Add(queryResult);
             }
 
@@ -450,7 +475,6 @@ namespace DapperExtensions
             foreach (var table in tables)
             {
                 var map = SqlGenerator.Configuration.GetMap(table.EntityType);
-
                 var properties = map
                     .Properties
                     .Where(p => p.KeyType == KeyType.Assigned ||
@@ -467,28 +491,39 @@ namespace DapperExtensions
         protected string GetColumnAliasFromSimpleAlias(string simpleAlias)
         {
             if (SqlGenerator.AllColumns.Any(c => c.SimpleAlias.Equals(simpleAlias, StringComparison.InvariantCultureIgnoreCase)))
+            {
                 return SqlGenerator.AllColumns.Where(c => c.SimpleAlias.Equals(simpleAlias, StringComparison.InvariantCultureIgnoreCase)).Select(c => c.Alias).Single();
+            }
+            
             return "";
         }
 
         protected string GetSimpleAliasFromColumnAlias(string columnAlias)
         {
             if (SqlGenerator.AllColumns.Any(c => c.Alias.Equals(columnAlias, StringComparison.InvariantCultureIgnoreCase)))
+            {
                 return SqlGenerator.AllColumns.Where(c => c.Alias.Equals(columnAlias, StringComparison.InvariantCultureIgnoreCase)).Select(c => c.SimpleAlias).Single();
+            }
+
             return "";
         }
 
         protected IEnumerable<T> MappColumns<T>(IEnumerable<dynamic> values)
         {
             var list = new List<Dictionary<string, object>>();
+
             foreach (var d in values.ToList())
             {
                 var dictionary = new Dictionary<string, object>();
+
                 foreach (KeyValuePair<string, object> kvp in d)
                 {
                     var alias = GetColumnAliasFromSimpleAlias(kvp.Key);
+
                     if (!string.IsNullOrEmpty(alias))
+                    {
                         dictionary.Add(alias, kvp.Value);
+                    }
                 }
 
                 list.Add(dictionary);
@@ -501,7 +536,8 @@ namespace DapperExtensions
 
         protected static DynamicParameters GetDynamicParameters(Dictionary<string, object> parameters)
         {
-            DynamicParameters dynamicParameters = new DynamicParameters();
+            var dynamicParameters = new DynamicParameters();
+
             foreach (var parameter in parameters)
             {
                 if (parameter.Value is Parameter p)
@@ -515,6 +551,7 @@ namespace DapperExtensions
                     dynamicParameters.Add(parameter.Key, GetParameterValue(parameter));
                 }
             }
+
             return dynamicParameters;
         }
 
@@ -530,6 +567,7 @@ namespace DapperExtensions
             if (prop.MemberInfo.DeclaringType == typeof(bool) || (prop.MemberInfo.DeclaringType.IsGenericType && prop.MemberType.GetGenericTypeDefinition() == typeof(Nullable<>) && prop.MemberInfo.DeclaringType.GetGenericArguments()[0] == typeof(bool)))
             {
                 var value = (bool?)propValue;
+
                 if (!value.HasValue)
                 {
                     parameters.Add(name, value, parameter.DbType,
@@ -556,13 +594,14 @@ namespace DapperExtensions
         private DynamicParameters GetDynamicParameters<T>(T entity, IClassMapper classMap, IList<IMemberMap> sequenceColumn, IList<MemberInfo> foreignKeys, IList<MemberInfo> ignoredColumns, bool useColumnAlias)
         {
             var keyColumns = sequenceColumn.Count == 0 ? classMap.Properties.Where(p => p.KeyType == KeyType.Assigned || p.KeyType == KeyType.Guid)?.ToList() : sequenceColumn;
-
             var dynamicParameters = new DynamicParameters();
 
             foreach (var prop in entity.GetType().GetProperties(BindingFlags.GetProperty | BindingFlags.GetField | BindingFlags.Instance | BindingFlags.Public)
                 .Where(p => !keyColumns.Any(k => k.Name.Equals(p.Name)) && !foreignKeys.Contains(p) && !ignoredColumns.Contains(p)
                 ))
+            {
                 dynamicParameters = AddParameter(entity, dynamicParameters, new MemberMap(prop), useColumnAlias);
+            }
 
             return dynamicParameters;
         }
@@ -574,7 +613,9 @@ namespace DapperExtensions
             var ignored = classMap.Properties.Where(x => x.Ignored).Select(p => p.MemberInfo).ToList();
 
             if (sequenceIdentityColumn?.Count > 1)
+            {
                 throw new ArgumentException("SequenceIdentity generator cannot be used with multi-column keys");
+            }
 
             return GetDynamicParameters(entity, classMap, sequenceIdentityColumn, foreignKeys, ignored, useColumnAlias);
         }
@@ -582,9 +623,12 @@ namespace DapperExtensions
         public DynamicParameters GetDynamicParameters<T>(T entity, DynamicParameters dynamicParameters, IMemberMap keyColumn, bool useColumnAlias = false)
         {
             dynamicParameters ??= new DynamicParameters();
+
             foreach (var prop in entity.GetType().GetProperties(BindingFlags.GetProperty | BindingFlags.Instance | BindingFlags.Public)
                 .Where(p => p.Name != keyColumn.Name))
+            {
                 AddParameter(entity, dynamicParameters, new MemberMap(prop), useColumnAlias);
+            }
 
             return dynamicParameters;
         }
@@ -621,8 +665,8 @@ namespace DapperExtensions
         {
             // defaultValue need for identify type of parameter
             var defaultValue = entity.GetType().GetProperty(key.Name).GetValue(entity, null);
-            dynamicParameters.Add("IdOutParam", direction: ParameterDirection.Output, value: defaultValue);
 
+            dynamicParameters.Add("IdOutParam", direction: ParameterDirection.Output, value: defaultValue);
             LastExecutedCommand = sql;
             connection.Execute(sql, dynamicParameters, transaction, commandTimeout, CommandType.Text);
 
@@ -645,18 +689,21 @@ namespace DapperExtensions
                 sql = SqlGenerator.IdentitySql(classMap);
                 result = connection.Query<long>(sql, dynamicParameters, transaction, false, commandTimeout, CommandType.Text);
             }
+
             LastExecutedCommand = sql;
 
             // We are only interested in the first identity, but we are iterating over all resulting items (if any).
             // This makes sure that ADO.NET drivers (like MySql) won't actively terminate the query.
             var hasResult = false;
             object keyValue = null;
+
             foreach (var identityValue in result)
             {
                 if (hasResult)
                 {
                     continue;
                 }
+
                 keyValue = identityValue;
                 hasResult = true;
             }
@@ -678,9 +725,7 @@ namespace DapperExtensions
             var value = connection.ExecuteScalar<int>(query);
 
             key.SetValue(entity, value);
-
             AddParameter(entity, dynamicParameters, key, true);
-
             keyValues ??= new ExpandoObject();
             keyValues.Add(key.Name, value);
 
@@ -706,12 +751,14 @@ namespace DapperExtensions
                 if (column.KeyType == KeyType.Guid && (Guid)column.GetValue(entity) == Guid.Empty)
                 {
                     var comb = SqlGenerator.Configuration.GetNextGuid();
+
                     column.SetValue(entity, comb);
                 }
             }
 
             IDictionary<string, object> keyValues = new ExpandoObject();
             var sql = SqlGenerator.Insert(classMap);
+
             if (triggerIdentityColumn != null || identityColumn != null)
             {
                 var keyColumn = triggerIdentityColumn ?? identityColumn;
@@ -738,7 +785,9 @@ namespace DapperExtensions
                 if (sequenceIdentityColumn.Count > 0)
                 {
                     if (sequenceIdentityColumn.Count > 1)
+                    {
                         throw new ArgumentException("SequenceIdentity generator cannot be used with multi-column keys");
+                    }
 
                     AddSequenceParameter(connection, entity, sequenceIdentityColumn[0], dynamicParameters, keyValues);
                 }
@@ -767,18 +816,19 @@ namespace DapperExtensions
         protected bool InternalUpdate<T>(IDbConnection connection, T entity, IClassMapper classMap, IPredicate predicate, IDbTransaction transaction, IList<IProjection> cols, int? commandTimeout, bool ignoreAllKeyProperties = false)
         {
             var parameters = new Dictionary<string, object>();
-            string sql = SqlGenerator.Update(classMap, predicate, parameters, ignoreAllKeyProperties, cols);
-
+            var sql = SqlGenerator.Update(classMap, predicate, parameters, ignoreAllKeyProperties, cols);
             var dynamicParameters = GetDynamicParameters(classMap, entity, true);
-            dynamicParameters.AddDynamicParams(GetDynamicParameters(parameters));
 
+            dynamicParameters.AddDynamicParams(GetDynamicParameters(parameters));
             LastExecutedCommand = sql;
+
             return connection.Execute(sql, dynamicParameters, transaction, commandTimeout, CommandType.Text) > 0;
         }
 
         protected bool InternalUpdate<T>(IDbConnection connection, T entity, IDbTransaction transaction, IList<IProjection> cols, int? commandTimeout, bool ignoreAllKeyProperties = false)
         {
             GetMapAndPredicate<T>(entity, out var classMap, out var predicate, true);
+            
             return InternalUpdate(connection, entity, classMap, predicate, transaction, cols, commandTimeout, ignoreAllKeyProperties);
         }
 
@@ -787,30 +837,36 @@ namespace DapperExtensions
             GetMapAndPredicate<T>(entities.FirstOrDefault(), out var classMap, out var predicate, true);
 
             foreach (var e in entities)
+            {
                 InternalUpdate(connection, e, classMap, predicate, transaction, cols, commandTimeout, ignoreAllKeyProperties);
+            }
         }
 
         protected T InternalGet<T>(IDbConnection connection, dynamic id, IDbTransaction transaction, int? commandTimeout, IList<IProjection> colsToSelect, IList<IReferenceMap> includedProperties = null)
         {
             var result = (IEnumerable<T>)InternalGetListAutoMap<T>(connection, id, null, transaction, commandTimeout, true, colsToSelect, includedProperties);
+            
             return result.SingleOrDefault();
         }
 
         protected IEnumerable<T> InternalGetListAutoMap<T>(IDbConnection connection, object predicate, IList<ISort> sort, IDbTransaction transaction, int? commandTimeout, bool buffered, IList<IProjection> colsToSelect, IList<IReferenceMap> includedProperties = null)
         {
             GetMapAndPredicate<T>(predicate, out var classMap, out var wherePredicate);
+            
             return GetListAutoMap<T>(connection, colsToSelect, classMap, wherePredicate, sort, transaction, commandTimeout, buffered, includedProperties);
         }
 
         protected IEnumerable<T> InternalGetPageAutoMap<T>(IDbConnection connection, object predicate, IList<ISort> sort, int page, int resultsPerPage, IDbTransaction transaction, int? commandTimeout, bool buffered, IList<IProjection> colsToSelect, IList<IReferenceMap> includedProperties = null)
         {
             GetMapAndPredicate<T>(predicate, out var classMap, out var wherePredicate);
+            
             return GetPageAutoMap<T>(connection, classMap, wherePredicate, sort, page, resultsPerPage, transaction, commandTimeout, buffered, colsToSelect, includedProperties);
         }
 
         protected IEnumerable<T> InternalGetSet<T>(IDbConnection connection, object predicate, IList<ISort> sort, int firstResult, int maxResults, IDbTransaction transaction, int? commandTimeout, bool buffered, IList<IProjection> colsToSelect, IList<IReferenceMap> includedProperties = null)
         {
             GetMapAndPredicate<T>(predicate, out var classMap, out var wherePredicate);
+            
             return GetSet<T>(connection, classMap, wherePredicate, sort, firstResult, maxResults, transaction, commandTimeout, buffered, colsToSelect, includedProperties);
         }
 

@@ -20,15 +20,14 @@ namespace DapperExtensions
         void ClearCache();
         Guid GetNextGuid();
         SqlInjection GetOrSetSqlInjection(Type entityType, SqlInjection sqlInjection = null);
-
         bool CaseSensitiveSearchEnabled { get; }
         void SetCaseSensitiveSearch(bool value);
     }
 
     public class DapperExtensionsConfiguration : IDapperExtensionsConfiguration
     {
-        private readonly ConcurrentDictionary<Type, SqlInjection> _sqlInjections = new ConcurrentDictionary<Type, SqlInjection>();
-        private readonly ConcurrentDictionary<Type, IClassMapper> _classMaps = new ConcurrentDictionary<Type, IClassMapper>();
+        private readonly ConcurrentDictionary<Type, SqlInjection> _sqlInjections = new();
+        private readonly ConcurrentDictionary<Type, IClassMapper> _classMaps = new();
 
         public DapperExtensionsConfiguration()
             : this(typeof(AutoClassMapper<>), new List<Assembly>(), new SqlServerDialect())
@@ -45,7 +44,6 @@ namespace DapperExtensions
         public Type DefaultMapper { get; }
         public IList<Assembly> MappingAssemblies { get; }
         public ISqlDialect Dialect { get; }
-
         public bool CaseSensitiveSearchEnabled { get; private set; } = false;
 
         public IClassMapper GetMap(Type entityType)
@@ -81,10 +79,12 @@ namespace DapperExtensions
             var timeOfDay = now.TimeOfDay;
             var bytes1 = BitConverter.GetBytes(timeSpan.Days);
             var bytes2 = BitConverter.GetBytes((long)(timeOfDay.TotalMilliseconds / 3.333333));
+
             Array.Reverse(bytes1);
             Array.Reverse(bytes2);
             Array.Copy(bytes1, bytes1.Length - 2, b, b.Length - 6, 2);
             Array.Copy(bytes2, bytes2.Length - 4, b, b.Length - 4, 4);
+
             return new Guid(b);
         }
 
@@ -106,8 +106,11 @@ namespace DapperExtensions
             }
 
             var result = getType(entityType.Assembly);
+
             if (result != null)
+            {
                 return result;
+            }
 
             for (var i = 0; i < MappingAssemblies.Count && result == null; i++)
             {
@@ -124,6 +127,7 @@ namespace DapperExtensions
                 value = sqlInjection;
                 _sqlInjections[entityType] = value;
             }
+
             return value;
         }
 

@@ -11,6 +11,7 @@ namespace DapperExtensions.Mapper
         IMemberMap Property { get; set; }
         Table Table { get; set; }
     }
+
     public class Column : IColumn
     {
         public Guid TableIdentity { get; set; }

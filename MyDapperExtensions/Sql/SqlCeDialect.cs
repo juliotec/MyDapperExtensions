@@ -34,14 +34,15 @@ namespace DapperExtensions.Sql
             }
 
             var result = new StringBuilder();
+
             result.Append(OpenQuote);
+            
             if (!string.IsNullOrWhiteSpace(schemaName))
             {
                 result.AppendFormat("{0}_", schemaName);
             }
 
             result.AppendFormat("{0}{1}", tableName, CloseQuote);
-
 
             if (!string.IsNullOrWhiteSpace(alias))
             {
@@ -64,17 +65,25 @@ namespace DapperExtensions.Sql
         public override string GetSetSql(string sql, int firstResult, int maxResults, IDictionary<string, object> parameters)
         {
             if (string.IsNullOrEmpty(sql))
+            {
                 throw new ArgumentNullException(nameof(sql), $"{nameof(sql)} cannot be null.");
+            }
 
             if (parameters == null)
+            {
                 throw new ArgumentNullException(nameof(parameters), $"{nameof(parameters)} cannot be null.");
+            }
 
             if (!IsSelectSql(sql))
+            {
                 throw new ArgumentException($"{nameof(sql)} must be a SELECT statement.", nameof(sql));
+            }
 
             var result = string.Format("{0} OFFSET @firstResult ROWS FETCH NEXT @maxResults ROWS ONLY", sql);
+
             parameters.Add("@firstResult", firstResult);
             parameters.Add("@maxResults", maxResults);
+
             return result;
         }
 

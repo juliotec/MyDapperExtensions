@@ -2,7 +2,6 @@
 using DapperExtensions.Predicate;
 using DapperExtensions.Sql;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -13,7 +12,7 @@ namespace DapperExtensions
 {
     public static class DapperExtensions
     {
-        private readonly static object _lock = new object();
+        private readonly static object _lock = new();
         private static Func<IDapperExtensionsConfiguration, IDapperImplementor> _instanceFactory;
         private static IDapperImplementor _instance;
         private static IDapperExtensionsConfiguration _configuration;
@@ -84,10 +83,7 @@ namespace DapperExtensions
                 {
                     lock (_lock)
                     {
-                        if (_instance == null)
-                        {
-                            _instance = InstanceFactory(_configuration);
-                        }
+                        _instance ??= InstanceFactory(_configuration);
                     }
                 }
 

@@ -16,13 +16,11 @@ namespace DapperExtensions.Mapper
         string SequenceName { get; }
         bool Ignored { get; }
         bool IsReadOnly { get; }
-
         DbType? DbType { get; }
         ParameterDirection? DbDirection { get; }
         int? DbSize { get; }
         byte? DbPrecision { get; }
         byte? DbScale { get; }
-
         KeyType KeyType { get; }
         MemberInfo MemberInfo { get; }
         IClassMapper ClassMapper { get; }
@@ -143,8 +141,11 @@ namespace DapperExtensions.Mapper
         public MemberMap Sequence(string sequenceName)
         {
             SequenceName = sequenceName;
+
             if (!string.IsNullOrEmpty(sequenceName))
+            { 
                 Key(KeyType.SequenceIdentity);
+            }
 
             return this;
         }
@@ -170,6 +171,7 @@ namespace DapperExtensions.Mapper
             }
 
             KeyType = keyType;
+
             return this;
         }
 
@@ -184,6 +186,7 @@ namespace DapperExtensions.Mapper
             }
 
             Ignored = true;
+
             return this;
         }
 
@@ -198,6 +201,7 @@ namespace DapperExtensions.Mapper
             }
 
             IsReadOnly = true;
+
             return this;
         }
 
@@ -213,6 +217,7 @@ namespace DapperExtensions.Mapper
             }
 
             DbSize = size;
+
             return this;
         }
 
@@ -222,6 +227,7 @@ namespace DapperExtensions.Mapper
         public MemberMap Type(DbType dbType)
         {
             DbType = dbType;
+
             return this;
         }
 
@@ -233,6 +239,7 @@ namespace DapperExtensions.Mapper
         public MemberMap Direction(ParameterDirection direction)
         {
             DbDirection = direction;
+
             return this;
         }
 
@@ -244,6 +251,7 @@ namespace DapperExtensions.Mapper
         public MemberMap Precision(byte precision)
         {
             DbPrecision = precision;
+
             return this;
         }
 
@@ -255,6 +263,7 @@ namespace DapperExtensions.Mapper
         public MemberMap Scale(byte scale)
         {
             DbScale = scale;
+
             return this;
         }
 

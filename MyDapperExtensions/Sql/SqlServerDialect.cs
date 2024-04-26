@@ -31,16 +31,24 @@ namespace DapperExtensions.Sql
         public override string GetSetSql(string sql, int firstResult, int maxResults, IDictionary<string, object> parameters)
         {
             if (string.IsNullOrEmpty(sql))
+            {
                 throw new ArgumentNullException(nameof(sql), $"{nameof(sql)} cannot be null.");
+            }
 
             if (parameters == null)
+            {
                 throw new ArgumentNullException(nameof(parameters), $"{nameof(parameters)} cannot be null.");
+            }
 
             if (!IsSelectSql(sql))
+            {
                 throw new ArgumentException($"{nameof(sql)} must be a SELECT statement.", nameof(sql));
+            }
 
             if (string.IsNullOrEmpty(GetOrderByClause(sql)))
+            {
                 sql = $"{sql} ORDER BY CURRENT_TIMESTAMP";
+            }
 
             var result = $"{sql} OFFSET (@skipRows) ROWS FETCH NEXT @maxResults ROWS ONLY";
 
@@ -53,20 +61,21 @@ namespace DapperExtensions.Sql
         protected static string GetOrderByClause(string sql)
         {
             var orderByIndex = sql.LastIndexOf(" ORDER BY ", StringComparison.InvariantCultureIgnoreCase);
+
             if (orderByIndex == -1)
             {
                 return null;
             }
 
-            var result = sql.Substring(orderByIndex).Trim();
-
+            var result = sql[orderByIndex..].Trim();
             var whereIndex = result.IndexOf(" WHERE ", StringComparison.InvariantCultureIgnoreCase);
+
             if (whereIndex == -1)
             {
                 return result;
             }
 
-            return result.Substring(0, whereIndex).Trim();
+            return result[..whereIndex].Trim();
         }
 
         public override string GetDatabaseFunctionString(DatabaseFunction databaseFunction, string columnName, string functionParameters = "")
