@@ -7,7 +7,7 @@
     <PackageProjectUrl>https://github.com/juliotec/MyDapperExtensions</PackageProjectUrl>
     <Description>This is an updated version from DapperExtensions with many fixes that has been ignored, since the previous one has been abandoned and out of date. A small library that complements Dapper by adding basic CRUD operations (Get, Insert, Update, Delete) for your POCOs. For more advanced query scenarios, Dapper Extensions provides a system predicate.</Description>
     <PackageReadmeFile>readme.md</PackageReadmeFile>
-	<VersionPrefix>1.0.4</VersionPrefix>
+	<VersionPrefix>1.0.5</VersionPrefix>
 	<Authors>Julio Abarca</Authors>
   </PropertyGroup>
 
