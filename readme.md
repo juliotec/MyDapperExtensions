@@ -1,6 +1,5 @@
-This Dapper Extensions version it was updated for net 6.0 and later
-
-Has been fixed some bugs
+* This Dapper Extensions version was updated for net 6.0 and later
+* Has been fixed some bugs
 
 # Introduction
 
